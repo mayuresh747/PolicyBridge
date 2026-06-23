@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Audit — Seattle Regulatory Research</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/marked.min.js"></script>
+    <script src="/static/purify.min.js"></script>
+</head>
+<body>
+    <div class="audit-layout">
+        <!-- Left column: query + answer -->
+        <div class="audit-left">
+            <header class="audit-header">
+                <h1>Pipeline Audit</h1>
+                <span class="audit-subtitle">Real-time query pipeline trace</span>
+                <button id="auditSidebarToggle" class="audit-sidebar-toggle" style="display:none;">Sources</button>
+            </header>
+
+            <div class="audit-input-area">
+                <textarea id="auditInput" class="audit-input" placeholder="Enter a query to trace..." rows="2"></textarea>
+                <button id="auditSendBtn" class="audit-send-btn">Run Audit</button>
+            </div>
+
+            <div class="audit-answer-area" id="auditAnswerArea">
+                <div class="audit-answer-placeholder" id="auditPlaceholder">
+                    Submit a query to see the pipeline trace and answer.
+                </div>
+                <div class="audit-answer-content" id="auditAnswerContent" style="display:none;">
+                    <h3 class="audit-answer-label">Answer</h3>
+                    <div class="message-assistant">
+                        <div id="auditAnswer" class="message-bubble"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column: waterfall timeline -->
+        <div class="audit-right">
+            <div class="audit-waterfall-header">
+                <h2>Pipeline Trace</h2>
+                <span class="audit-total-time" id="auditTotalTime"></span>
+            </div>
+            <div class="audit-waterfall" id="auditWaterfall">
+                <!-- Cards inserted here by audit.js as SSE events arrive -->
+            </div>
+        </div>
+
+        <!-- Sidebar: sources + relationships (hidden until sources arrive) -->
+        <aside class="audit-sidebar" id="auditSidebar" style="display:none;">
+            <div class="audit-sidebar-section">
+                <div class="audit-sidebar-heading">Sources</div>
+                <div class="audit-sources-scroll" id="auditSourcesList"></div>
+            </div>
+            <div class="audit-sidebar-section">
+                <div class="audit-sidebar-heading">Relationships</div>
+                <div class="audit-relationships-scroll" id="auditRelationshipPanel">
+                    <p class="sidebar-empty-state" style="padding:12px 16px;">Click a source to view relationships</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="/static/audit.js"></script>
+</body>
+</html>

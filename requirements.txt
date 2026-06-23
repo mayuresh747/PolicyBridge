@@ -1,0 +1,27 @@
+# Server
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.9
+aiosqlite>=0.19.0
+PyJWT>=2.8.0
+
+# Ingestion & chunking
+docling==2.82.0
+semchunk>=0.2.0
+
+# Vector store
+lancedb>=0.3.0
+
+# Graph store
+kuzu==0.11.3
+
+# LLM / embeddings
+openai>=1.42.0
+tiktoken>=0.7.0
+
+# Data
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+pandas>=2.0.0
+pyarrow>=14.0.0
+tqdm>=4.65.0

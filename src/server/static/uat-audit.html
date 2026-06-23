@@ -1,0 +1,176 @@
+<\!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UAT: Audit Panel</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+/* Simulate the app layout for testing */
+body { margin: 0; }
+.test-controls { position: fixed; bottom: 20px; left: 20px; z-index: 999; display: flex; gap: 8px; }
+.test-controls button { padding: 8px 16px; border: 1px solid #666; border-radius: 6px; cursor: pointer; font-size: 13px; background: #fff; }
+.test-controls button:hover { background: #eee; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+    <div class="chat-column" style="flex:1;display:flex;flex-direction:column;">
+        <header class="header"><div class="header-left"><div class="header-title"><h1>UAT Test</h1></div></div></header>
+        <main class="chat-area" style="flex:1;padding:40px;"><p>Chat area placeholder. Open audit panel →</p></main>
+    </div>
+
+    <aside class="audit-panel" id="auditPanel" style="display:flex;">
+        <div class="audit-panel-header">
+            <h3>Pipeline Trace</h3>
+            <span class="audit-total-time" id="auditTotalTime"></span>
+            <button class="audit-panel-close" id="auditPanelClose">&times;</button>
+        </div>
+        <div class="audit-waterfall" id="auditWaterfall"></div>
+    </aside>
+</div>
+
+<div class="test-controls">
+    <button onclick="runAllStages()">Fire All Stages</button>
+    <button onclick="window.AuditPanel.reset()">Reset</button>
+</div>
+
+<script src="/static/audit-panel.js"></script>
+<script>
+function runAllStages() {
+    window.AuditPanel.reset();
+
+    // 1. Classification
+    window.AuditPanel.handleEvent('audit_classify', {
+        elapsed_ms: 120,
+        output: { level: 'L3', reasoning: 'Complex cross-agency query about setback requirements', conflict_seeking: true, premise_scan_needed: false }
+    });
+
+    // 2. Premise check
+    setTimeout(() => window.AuditPanel.handleEvent('audit_premise', {
+        elapsed_ms: 85,
+        output: { verdict: 'no_false_premise' }
+    }), 200);
+
+    // 3. Decomposition
+    setTimeout(() => window.AuditPanel.handleEvent('audit_decompose', {
+        elapsed_ms: 340,
+        output: {
+            leaf_count: 3, depth: 2,
+            structure_analysis: { core_query: 'setback requirements for ADU in SF zone', known_entities: ['SMC 23.44'], unknown_entities: ['specific lot dimensions'], intent: 'regulatory_lookup' },
+            tree: {
+                node_type: 'parallel', query: 'ADU setback requirements in Seattle SF zones',
+                left: { query: 'SMC residential setback minimums for ADU' },
+                right: { node_type: 'sequential', query: 'State preemption for ADU setbacks',
+                    left: { query: 'RCW ADU enabling legislation' },
+                    right: { query: 'WAC implementing rules for ADU setbacks' }
+                }
+            }
+        }
+    }), 500);
+
+    // 4. Retrieval
+    setTimeout(() => window.AuditPanel.handleEvent('audit_retrieve', {
+        elapsed_ms: 890,
+        output: {
+            total_results: 18,
+            breakdown: { vector: [1,2,3,4,5,6], bm25: [7,8,9,10], graph: [11,12] },
+            per_leaf: [
+                { leaf_query: 'SMC residential setback minimums for ADU', chunk_count: 8, methods: { vector: 4, bm25: 3, graph: 1 }, chunks: [
+                    { citation: 'SMC 23.44.014(B)', score: 0.9234, retrieval_sources: ['vector','bm25'] },
+                    { citation: 'SMC 23.44.041', score: 0.8812, retrieval_sources: ['vector'] },
+                    { citation: 'DIR 27-2018', score: 0.7651, retrieval_sources: ['bm25'] }
+                ]},
+                { leaf_query: 'RCW ADU enabling legislation', chunk_count: 5, methods: { vector: 3, bm25: 2, graph: 0 }, chunks: [
+                    { citation: 'RCW 36.70A.681', score: 0.8901, retrieval_sources: ['vector'] },
+                    { citation: 'RCW 36.70A.680', score: 0.8345, retrieval_sources: ['vector','bm25'] }
+                ]},
+                { leaf_query: 'WAC implementing rules for ADU setbacks', chunk_count: 5, methods: { vector: 2, bm25: 2, graph: 1 }, chunks: [
+                    { citation: 'WAC 365-196-425', score: 0.8456, retrieval_sources: ['vector','graph'] }
+                ]}
+            ],
+            top_5: [{ citation: 'SMC 23.44.014(B)', score: 0.9234 }]
+        }
+    }), 900);
+
+    // 5. Reranking
+    setTimeout(() => window.AuditPanel.handleEvent('audit_rerank', {
+        elapsed_ms: 210,
+        before_count: 18, after_count: 12, method: 'answer_rerank',
+        top_10: [
+            { citation: 'SMC 23.44.014(B)', before_score: 0.9234, after_score: 0.9510, rank_change: 0 },
+            { citation: 'RCW 36.70A.681', before_score: 0.8901, after_score: 0.9200, rank_change: 2 },
+            { citation: 'WAC 365-196-425', before_score: 0.8456, after_score: 0.8800, rank_change: 1 },
+            { citation: 'SMC 23.44.041', before_score: 0.8812, after_score: 0.8700, rank_change: -1 },
+            { citation: 'DIR 27-2018', before_score: 0.7651, after_score: 0.7900, rank_change: 0 }
+        ],
+        dropped: [
+            { citation: 'WAC 365-196-320', before_score: 0.4100 },
+            { citation: 'SMC 25.09.200', before_score: 0.3800 }
+        ], dropped_total: 6
+    }), 1200);
+
+    // 6. Graph expansion
+    setTimeout(() => window.AuditPanel.handleEvent('audit_graph_expand', {
+        elapsed_ms: 150,
+        seeds_used: 3,
+        added: [
+            { citation: 'DIR 10-2020', chunk_id: 'dir10', edge_type: 'IMPLEMENTS', seed_citation: 'SMC 23.44.014(B)', score: 0.7800 },
+            { citation: 'RCW 36.70A.698', chunk_id: 'rcw698', edge_type: 'AMENDS', seed_citation: 'RCW 36.70A.681', score: 0.7200 }
+        ]
+    }), 1500);
+
+    // 7. Conflict expansion
+    setTimeout(() => window.AuditPanel.handleEvent('audit_conflict_expand', {
+        elapsed_ms: 280,
+        added_count: 1, threshold: 0.55,
+        approach_1_hits: [
+            { citation: 'DIR 27-2018 Sec 4', agency: 'SDCI', shared_target: 'RCW 36.70A.681', seed_id: 's1' }
+        ],
+        approach_2_hits: [
+            { citation: 'WAC 365-196-425(3)', agency: 'Commerce', cosine: 0.6812, seed_id: 's2' },
+            { citation: 'IBC-WA 3103.1', agency: 'IBC', cosine: 0.5234, seed_id: 's3' }
+        ]
+    }), 1800);
+
+    // 8. Budget gate
+    setTimeout(() => window.AuditPanel.handleEvent('audit_budget', {
+        elapsed_ms: 5,
+        total_before: 14200, total_after: 12000,
+        chunks_before: 15, chunks_after: 12, trimmed: 3,
+        trimmed_chunks: [
+            { citation: 'IBC-WA 3103.1', priority_tier: 0, tokens: 820, retrieval_sources: ['conflict_expand'] },
+            { citation: 'WAC 365-196-320', priority_tier: 1, tokens: 680, retrieval_sources: ['graph_expand'] },
+            { citation: 'SMC 25.09.200', priority_tier: 4, tokens: 700, retrieval_sources: ['vector'] }
+        ]
+    }), 2000);
+
+    // 9. Synthesis context
+    setTimeout(() => window.AuditPanel.handleEvent('audit_synthesis_context', {
+        chunks: [
+            { citation: 'SMC 23.44.014(B)', agency: 'SDCI', score: 0.951, retrieval_sources: ['vector','bm25'], tokens: 1200 },
+            { citation: 'RCW 36.70A.681', agency: 'Legislature', score: 0.920, retrieval_sources: ['vector'], tokens: 980 },
+            { citation: 'WAC 365-196-425', agency: 'Commerce', score: 0.880, retrieval_sources: ['vector','graph'], tokens: 1100 },
+            { citation: 'DIR 27-2018', agency: 'SDCI', score: 0.790, retrieval_sources: ['bm25'], tokens: 650 },
+            { citation: 'DIR 10-2020', agency: 'SDCI', score: 0.780, retrieval_sources: ['graph_expand'], tokens: 890 },
+            { citation: 'RCW 36.70A.698', agency: 'Legislature', score: 0.720, retrieval_sources: ['graph_expand'], tokens: 750 }
+        ],
+        graph_expanded_count: 2, conflict_expanded_count: 0, total_tokens: 5570
+    }), 2200);
+
+    // 10. LLM I/O
+    setTimeout(() => window.AuditPanel.handleEvent('audit_llm_io', {
+        input: { model: 'gpt-5.1', temperature: 0.2, max_tokens: 4096, num_sources: 6, context_length_chars: 22400 }
+    }), 2400);
+
+    // Usage + done
+    setTimeout(() => {
+        window.AuditPanel.handleEvent('usage', { prompt_tokens: 5800, completion_tokens: 1200 });
+        window.AuditPanel.handleEvent('done', {});
+    }, 2600);
+}
+
+// Auto-fire on load
+window.addEventListener('load', () => setTimeout(runAllStages, 500));
+</script>
+</body>
+</html>
